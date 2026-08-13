@@ -208,38 +208,57 @@ U-Net은 512 × 512 크기의 RGB 영상을 입력으로 받아
 | **Region-level** | IoU, Precision, Recall, F1-Score |
 | **Boundary-level** | Mean Boundary Distance (MBD), Boundary F1 |
 
-이를 통해 **“영역을 얼마나 잘 분할했는가”와 “경계를 얼마나 정확한 위치에서 검출했는가”**를 분리하여 확인하였습니다.
+이를 통해 **“영역을 얼마나 정확하게 분할했는가”와
+“수변 경계를 얼마나 정확한 위치에서 검출했는가”**를 분리하여 평가하였습니다.
 
 ---
 
-### 3.2 Initial Approach — Color + Texture Heuristic
+### 3.2 Initial Approach — From Color to Color + Texture
 
-U-Net 적용 전 비교 기준을 확보하기 위해,
-먼저 항공영상의 **RGB 색상과 Local Texture 특성**을 이용한 Heuristic Baseline을 구성하였습니다.
+초기에는 물 영역이 주변 지형과 색상 차이를 보일 것이라고 판단하여,
+**RGB 색상 조건만으로 수변 영역을 구분할 수 있을 것이라고 예상**하였습니다.
 
-수변 후보 영역은 주로 다음 영상 특성을 이용하여 판단하였습니다.
+하지만 실제 항공영상을 분석하면서 다음 문제를 확인하였습니다.
 
-- RGB 채널 값에 따른 색상 조건
-- Green / Red 채널 관계
-- Local Standard Deviation을 이용한 질감 특성
-- Morphological Processing을 이용한 Mask 정제
-- Connected Component 분석을 통한 주요 영역 추출
+- 숲 영역이 어두운 녹색 계열로 나타남
+- 일부 수역 역시 짙은 녹색 계열로 관측됨
+- 따라서 색상 정보만으로 물과 숲을 안정적으로 구분하기 어려움
 
-이를 통해 학습 모델 없이도 수변 후보 영역을 탐지할 수 있는
-**규칙 기반 초기 Baseline**을 구성하였습니다.
+이 문제를 해결하기 위해 색상 이외의 영상 특성을 추가로 고려하였습니다.
+
+항공영상에서 숲은 나무와 식생으로 인해 상대적으로 **거친 Texture**를 나타내는 반면,
+수면은 상대적으로 **매끄러운 Texture**를 나타낸다는 점에 착안하였습니다.
+
+따라서 초기 Color 기반 접근을 다음과 같이 확장하였습니다.
+
+```text
+Color-only Detection
+        ↓
+물 / 숲의 유사한 색상 문제 확인
+        ↓
+Local Texture 특성 추가
+        ↓
+Color + Texture Heuristic Baseline
+```
+
+최종 Heuristic Baseline에서는 다음 정보를 함께 사용하였습니다.
+
+- RGB Channel 조건
+- Green / Red Channel 관계
+- Local Standard Deviation
+- Morphological Processing
+- Connected Component 분석
 
 ---
 
 ### 3.3 Baseline as a Comparison Reference
 
-Heuristic Baseline은 최종 방법이 아니라,
-이후 U-Net 적용에 따른 성능 개선 여부를 확인하기 위한 **비교 기준**으로 활용하였습니다.
+Color + Texture 방식은 최종 모델이 아니라,
+이후 학습 기반 방법의 성능 개선 여부를 확인하기 위한 **Baseline**으로 활용하였습니다.
 
-동일한 JSON Annotation 기반 조건에서 Heuristic과 U-Net을 비교하여,
+동일한 Annotation 조건에서 Heuristic과 U-Net을 비교하여,
 
-> **학습 기반 접근이 기존 규칙 기반 방법보다 실제로 영역 분할과 경계 검출 성능을 개선하는가?**
+> **학습 기반 접근이 규칙 기반 접근보다 실제로
+> 영역 분할과 경계 검출 성능을 개선하는가?**
 
-를 정량적으로 검증하는 방향으로 프로젝트를 진행하였습니다.
-
-이 Baseline에서 확인된 문제와 그에 따른 U-Net 기반 개선 과정은
-다음 절에서 설명합니다.
+를 정량적으로 확인하는 방향으로 프로젝트를 진행하였습니다.
