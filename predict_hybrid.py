@@ -31,8 +31,7 @@ from src.model import UNet
 
 # ── 설정 ─────────────────────────────────────────────────────────
 IMG_SIZE     = 512
-CHECKPOINT   = "checkpoint/best_sam_unet_model.pth"
-ARTIFACT_DIR = r"C:\Users\kimse\.gemini\antigravity\brain\831c6100-a054-4b10-9032-e60e39028194"
+HECKPOINT = "checkpoint/best_unet_model.pth"
 
 # 물 판별 임계값
 WATER_THRESHOLD = 0.5
