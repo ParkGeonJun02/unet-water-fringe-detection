@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Model checkpoints
+checkpoint/
+*.pth
+*.pt
+
+# Dataset
+data/
+
+# Local / temporary files
+scratch/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
