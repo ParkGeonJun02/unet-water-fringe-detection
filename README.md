@@ -457,7 +457,7 @@ U-Net 적용 후 평균 경계 위치 오차가
 정량 검증 결과, U-Net 적용을 통해 다음 두 관점의 개선을 확인하였습니다.
 
 <p align="center"> 
-  <img src="Verification_Summary_insert_image.png" width="400"> 
+  <img src="Verification_Summary_insert_image.png" width="650"> 
 </p>
 
 > Color + Texture 기반 고정 규칙보다,
