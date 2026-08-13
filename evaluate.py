@@ -1,7 +1,7 @@
 """
 evaluate.py
 
-Evaluation script for U-Net binary water segmentation.
+Development evaluation script for U-Net binary water segmentation.
 
 Metrics:
 - IoU (Intersection over Union)
@@ -10,9 +10,13 @@ Metrics:
 - Overall Accuracy (OA)
 
 Important:
-This script requires ground-truth label files in the evaluation label directory.
-For the portfolio results reported in this repository, the JSON GT-based
-comparison scripts in the analysis/ directory are used separately.
+- Only validation images with matching JSON annotation files are evaluated.
+- WaterFringeDataset combines the JSON-derived mask with a color/texture
+  heuristic mask.
+- Therefore, metrics from this script are used only for development checks
+  and should not be interpreted as pure JSON Ground Truth performance.
+- Portfolio-level quantitative comparisons are performed separately
+  using the scripts in analysis/.
 """
 
 import os
@@ -68,9 +72,9 @@ def main():
     ]
 
     if len(json_labels) == 0:
-        print("[ERROR] No JSON ground-truth labels found.")
-        print("Evaluation stopped to avoid using automatically generated masks as GT.")
-        sys.exit(1)
+    print("[ERROR] No JSON annotation files found.")
+    print("Evaluation requires validation images with matching JSON annotations.")
+    sys.exit(1)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Evaluation device: {device}")
@@ -86,10 +90,39 @@ def main():
         ToTensorV2()
     ])
 
-    val_dataset = WaterFringeDataset(IMG_DIR, LABEL_DIR, transform=val_transform)
-    val_loader = DataLoader(val_dataset, batch_size=4, shuffle=False, num_workers=2)
-    print(f"Validation Dataset Size: {len(val_dataset)} images")
+    val_dataset = WaterFringeDataset(
+        IMG_DIR,
+        LABEL_DIR,
+        transform=val_transform
+    )
 
+    # Keep only validation images that have matching JSON annotation files.
+    val_dataset.img_files = [
+        img_name
+        for img_name in val_dataset.img_files
+        if os.path.exists(
+            os.path.join(
+                LABEL_DIR,
+                f"{os.path.splitext(img_name)[0]}.json"
+            )
+        )
+    ]
+
+    if len(val_dataset) == 0:
+        print("[ERROR] No validation images with matching JSON annotations were found.")
+        sys.exit(1)
+    
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=4,
+        shuffle=False,
+        num_workers=2
+    )
+
+    print(
+        f"JSON-annotated Validation Dataset Size: "
+        f"{len(val_dataset)} images"
+    )
     # 모델 로드
     model = UNet(in_channels=3, num_classes=1).to(device)
     model.load_state_dict(torch.load(CHECKPOINT, map_location=device))
@@ -125,15 +158,16 @@ def main():
     avg_recall = total_recall / count
     avg_oa = total_oa / count
 
-    print("\n" + "="*40)
-    print("         QUANTITATIVE EVALUATION RESULTS")
-    print("="*40)
+    print("\n" + "="*50)
+    print(" DEVELOPMENT VALIDATION RESULTS")
+    print("="*50)
     print(f"- Evaluated Images: {count}")
     print(f"- Mean IoU ( 수역 ): {avg_iou*100:.2f}%")
     print(f"- Precision ( 정밀도 ): {avg_precision*100:.2f}%")
     print(f"- Recall ( 재현율 ): {avg_recall*100:.2f}%")
     print(f"- Overall Accuracy ( OA ): {avg_oa*100:.2f}%")
-    print("="*40)
+    print("Note: Targets include JSON annotations + heuristic mask supplementation.")
+    print("="*50)
 
 if __name__ == "__main__":
     main()
