@@ -11,20 +11,17 @@ Pipeline:
 5. Visualize terrain boundaries on the original image.
 """
 
-import os
-import sys
-
 import cv2
 import matplotlib
+
+matplotlib.use("Agg")
+
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
 
 from scipy import ndimage
-
-
-matplotlib.use("Agg")
 
 
 # ============================================================
