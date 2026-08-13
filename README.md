@@ -33,7 +33,7 @@
 
 ### Development Flow
 
-<img src="Input_data_enviroment_insert_image.png" width="600">
+<img src="Input_data_enviroment_insert_image.png" width="400">
 
 
 ---
