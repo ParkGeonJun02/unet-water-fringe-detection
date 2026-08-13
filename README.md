@@ -65,7 +65,7 @@
 U-Net 학습에 사용할 Binary Mask를 구성하였습니다.
 
 <p align="center">
-  <img src="Input_data_enviroment_insert_image.png" width="600">
+  <img src="Input_data_enviroment_insert_image.png" width="400">
 </p>
 
 ---
@@ -162,7 +162,7 @@ U-Net은 512 × 512 크기의 RGB 영상을 입력으로 받아
 따라서 프로젝트의 전체 개발·검증 과정은 다음과 같이 구성하였습니다.
 
 <p align="center">
-  <img src="Development_Constraints_inserted_image.png" width="600">
+  <img src="Development_Constraints_inserted_image.png" width="400">
 </p>
 
 이를 통해 단순히 모델의 출력 영상을 확인하는 것이 아니라,
