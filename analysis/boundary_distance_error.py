@@ -1,13 +1,18 @@
 """
-boundary_distance_error_v3.py
-════════════════════════════════════════════════════════
-GT: 학습셋 JSON 레이블 (CODE=50/20/40/511) → 순수 Ground Truth
-Heuristic pred: 색상+질감만 (SAM+Texture 방식)
-U-Net pred: U-Net 모델 출력 (학습 후 학습셋 적용)
+boundary_distance_error.py
 
-★ 핵심 결론:
-  "강과 육지의 경계선 위치 오차를 U-Net이 Heuristic보다 X픽셀 줄였다"
-════════════════════════════════════════════════════════
+Boundary accuracy comparison between:
+1. JSON polygon Ground Truth
+2. Color + Texture heuristic baseline
+3. U-Net water segmentation
+
+Metrics:
+- Mean Boundary Distance (MBD)
+- Boundary F1-Score at multiple pixel tolerances
+
+Note:
+This analysis uses images with available JSON annotations
+from the training dataset for baseline comparison.
 """
 
 import os, sys, json, torch
@@ -30,16 +35,10 @@ sys.path.append(os.path.abspath('.'))
 from src.model import UNet
 
 # ─── 설정 ────────────────────────────────────────────
-CHECKPOINT  = "checkpoint/best_sam_unet_model.pth"
+CHECKPOINT  = "checkpoint/best_unet_model.pth"
 TRAIN_IMG   = "data/processed/train/images"
 TRAIN_LABEL = "data/processed/train/labels"
-ARTIFACT    = r"C:\Users\kimse\.gemini\antigravity\brain\831c6100-a054-4b10-9032-e60e39028194"
-SAVE_PATHS  = [
-    r"C:\Users\kimse\water_fringe_detection - 복사본\result_images\boundary_distance_error.png",
-    r"C:\Users\kimse\water_fringe_detection\result_images\boundary_distance_error.png",
-    rf"{ARTIFACT}\images\boundary_distance_error.png",
-    rf"{ARTIFACT}\boundary_distance_error.png",
-]
+SAVE_PATH = "results/boundary_distance_error.png"
 RADII = [1, 2, 3, 5, 7, 10, 15]
 THR   = 0.5
 # ──────────────────────────────────────────────────────
@@ -268,7 +267,7 @@ ax0.text(2.48, (mu_h+mu_u)/2, label_txt,
          color=clr_arrow, fontsize=12, fontweight='bold', va='center')
 
 ax0.set_xticks([1,2])
-ax0.set_xticklabels(['Heuristic\n(SAM+Texture)','Proposed\nU-Net'], fontsize=12, color='#d0d0e8')
+ax0.set_xticklabels(['Heuristic\n(Color+Texture)', 'Proposed\nU-Net'], fontsize=12, color='#d0d0e8')
 ax0.set_ylabel('Mean Boundary Distance (pixels)', fontsize=11, color='#a0a0c0')
 ax0.set_title(f'Boundary Location Error (MBD)\n(학습셋 JSON GT 기준, {n_mbd}장 매칭 비교)',
               fontsize=13, fontweight='bold', color='white', pad=14)
@@ -332,9 +331,13 @@ fig.suptitle(f'Boundary Error Analysis: Heuristic vs Proposed U-Net\n{headline}'
              fontsize=12, fontweight='bold', color=color_title, y=1.04)
 
 plt.tight_layout()
-for p in SAVE_PATHS:
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    fig.savefig(p, dpi=180, bbox_inches='tight', facecolor=fig.get_facecolor())
-    print(f"Saved: {p}")
+os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
+fig.savefig(
+    SAVE_PATH,
+    dpi=180,
+    bbox_inches="tight",
+    facecolor=fig.get_facecolor()
+)
+print(f"Saved: {SAVE_PATH}")
 plt.close()
 print("All done!")
