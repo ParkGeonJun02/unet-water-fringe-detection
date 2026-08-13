@@ -72,9 +72,9 @@ def main():
     ]
 
     if len(json_labels) == 0:
-    print("[ERROR] No JSON annotation files found.")
-    print("Evaluation requires validation images with matching JSON annotations.")
-    sys.exit(1)
+      print("[ERROR] No JSON annotation files found.")
+      print("Evaluation requires validation images with matching JSON annotations.")
+      sys.exit(1)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Evaluation device: {device}")
