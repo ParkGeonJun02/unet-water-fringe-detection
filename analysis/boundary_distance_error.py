@@ -29,7 +29,6 @@ from scipy import ndimage
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
 
 sys.path.append(os.path.abspath('.'))
 from src.model import UNet
@@ -38,8 +37,11 @@ from src.model import UNet
 CHECKPOINT  = "checkpoint/best_unet_model.pth"
 TRAIN_IMG   = "data/processed/train/images"
 TRAIN_LABEL = "data/processed/train/labels"
-SAVE_PATH = "results/boundary_distance_error.png"
-RADII = [1, 2, 3, 5, 7, 10, 15]
+
+SAVE_MBD = "results/boundary_mbd.png"
+SAVE_F1  = "results/boundary_f1_bar.png"
+
+RADII = [1, 5, 10, 15]
 THR   = 0.5
 # ──────────────────────────────────────────────────────
 
@@ -225,119 +227,310 @@ for r,u,h in zip(RADII,bf1_u_m,bf1_h_m):
 # ─── 5. 시각화 ────────────────────────────────────────
 COLOR_H = '#ff7043'
 COLOR_U = '#29b6f6'
-plt.style.use('dark_background')
-fig = plt.figure(figsize=(18,8))
-fig.patch.set_facecolor('#0f0f1a')
-gs  = gridspec.GridSpec(1,2, figure=fig, wspace=0.38)
 
-# ── [좌] MBD Violin/Box (핵심: 몇 픽셀 줄였나) ──────
-ax0 = fig.add_subplot(gs[0])
+plt.style.use('dark_background')
+
+# =====================================================
+# Figure 1: Mean Boundary Distance (MBD)
+# =====================================================
+fig1, ax0 = plt.subplots(figsize=(9, 8))
+fig1.patch.set_facecolor('#0f0f1a')
 ax0.set_facecolor('#0f0f1a')
 
-clip_val = np.percentile(np.concatenate([mbd_h, mbd_u]), 90)
-mbd_h_c  = np.clip(mbd_h, 0, clip_val)
-mbd_u_c  = np.clip(mbd_u, 0, clip_val)
+mu_h = np.mean(mbd_h)
+mu_u = np.mean(mbd_u)
+reduce_px = mu_h - mu_u
 
-vp = ax0.violinplot([mbd_h_c, mbd_u_c], positions=[1,2],
-                    showmedians=True, showextrema=True, widths=0.6)
-colors = [COLOR_H, COLOR_U]
-for body, clr in zip(vp['bodies'], colors):
-    body.set_facecolor(clr); body.set_alpha(0.3)
-vp['cmedians'].set_color('white'); vp['cmedians'].set_linewidth(2.5)
-for part in ['cmaxes','cmins','cbars']:
-    vp[part].set_color('#777788'); vp[part].set_linewidth(1.2)
+clip_val = np.percentile(
+    np.concatenate([mbd_h, mbd_u]),
+    90
+)
 
-mu_h = np.mean(mbd_h); mu_u = np.mean(mbd_u)
-md_h = np.median(mbd_h); md_u = np.median(mbd_u)
+vp = ax0.violinplot(
+    [
+        np.clip(mbd_h, 0, clip_val),
+        np.clip(mbd_u, 0, clip_val)
+    ],
+    positions=[1, 2],
+    showmedians=True,
+    showextrema=True,
+    widths=0.6
+)
 
-ax0.scatter([1],[mu_h],s=160,color=COLOR_H,zorder=6,edgecolors='white',lw=2,
-            label=f'Heuristic  mean={mu_h:.1f}px / median={md_h:.1f}px')
-ax0.scatter([2],[mu_u], s=160,color=COLOR_U, zorder=6,edgecolors='white',lw=2,
-            label=f'U-Net       mean={mu_u:.1f}px / median={md_u:.1f}px')
+for body, color in zip(
+    vp['bodies'],
+    [COLOR_H, COLOR_U]
+):
+    body.set_facecolor(color)
+    body.set_alpha(0.3)
 
-# 개선 화살표
-arrow_x = 2.28
-ax0.annotate('', xy=(arrow_x, min(mu_h,mu_u)), xytext=(arrow_x, max(mu_h,mu_u)),
-             arrowprops=dict(arrowstyle='<->', color='#7effc4', lw=2.8))
-sign = '▼' if reduce_px > 0 else '▲'
-clr_arrow = '#7effc4' if reduce_px > 0 else '#ff6b6b'
-label_txt = (f'U-Net\n{sign} {abs(reduce_px):.1f} px\n감소'
-             if reduce_px > 0 else f'Heuristic\n{sign} {abs(reduce_px):.1f} px\n낮음')
-ax0.text(2.48, (mu_h+mu_u)/2, label_txt,
-         color=clr_arrow, fontsize=12, fontweight='bold', va='center')
+vp['cmedians'].set_color('white')
+vp['cmedians'].set_linewidth(2.5)
 
-ax0.set_xticks([1,2])
-ax0.set_xticklabels(['Heuristic\n(Color+Texture)', 'Proposed\nU-Net'], fontsize=12, color='#d0d0e8')
-ax0.set_ylabel('Mean Boundary Distance (pixels)', fontsize=11, color='#a0a0c0')
-ax0.set_title(f'Boundary Location Error (MBD)\n(학습셋 JSON GT 기준, {n_mbd}장 매칭 비교)',
-              fontsize=13, fontweight='bold', color='white', pad=14)
-ax0.tick_params(colors='#a0a0c0', labelsize=10)
-ax0.set_ylim(0, clip_val*1.28)
-ax0.legend(fontsize=9.5, facecolor='#0f0f1a', edgecolor='#444455',
-           labelcolor='white', loc='upper right')
-ax0.grid(axis='y', ls='--', alpha=0.18, color='#a0a0c0')
-for sp in ax0.spines.values(): sp.set_visible(False)
+for part in ['cmaxes', 'cmins', 'cbars']:
+    vp[part].set_color('#777788')
+    vp[part].set_linewidth(1.2)
 
-# ── [우] Boundary F1 @ tolerance 막대그래프 ──────────
-ax1 = fig.add_subplot(gs[1])
-ax1.set_facecolor('#0f0f1a')
-x = np.arange(len(RADII)); w = 0.36
+ax0.scatter(
+    [1],
+    [mu_h],
+    s=180,
+    color=COLOR_H,
+    zorder=6,
+    edgecolors='white',
+    linewidths=2,
+    label=f'Heuristic mean = {mu_h:.1f} px'
+)
 
-ax1.bar(x-w/2, bf1_h_m, w, label='Heuristic',
-        color=COLOR_H, alpha=0.88, zorder=3,
-        yerr=bf1_h_s, capsize=3, error_kw=dict(color=COLOR_H,alpha=0.5,lw=1.3))
-ax1.bar(x+w/2, bf1_u_m, w, label='Proposed U-Net',
-        color=COLOR_U, alpha=0.88, zorder=3,
-        yerr=bf1_u_s, capsize=3, error_kw=dict(color=COLOR_U,alpha=0.5,lw=1.3))
+ax0.scatter(
+    [2],
+    [mu_u],
+    s=180,
+    color=COLOR_U,
+    zorder=6,
+    edgecolors='white',
+    linewidths=2,
+    label=f'U-Net mean = {mu_u:.1f} px'
+)
 
-y_top = max(max(bf1_u_m), max(bf1_h_m)) if max(bf1_u_m) > 0 else 80
-for i,(u,h) in enumerate(zip(bf1_u_m, bf1_h_m)):
-    ax1.text(i-w/2, h+max(bf1_h_s)+0.3, f'{h:.1f}%',
-             ha='center', va='bottom', fontsize=8.5, color=COLOR_H, fontweight='bold')
-    ax1.text(i+w/2, u+max(bf1_u_s)+0.3, f'{u:.1f}%',
-             ha='center', va='bottom', fontsize=8.5, color=COLOR_U, fontweight='bold')
-    delta = u-h
-    clr   = '#7effc4' if delta >= 0 else '#ff9999'
-    ax1.text(i, y_top+max(max(bf1_u_s),max(bf1_h_s))+1.5,
-             f'{delta:+.1f}%', ha='center', fontsize=9, color=clr, fontweight='bold')
+ax0.annotate(
+    '',
+    xy=(2.32, mu_u),
+    xytext=(2.32, mu_h),
+    arrowprops=dict(
+        arrowstyle='<->',
+        color='#7effc4',
+        lw=3
+    )
+)
 
-ax1.set_xticks(x)
-ax1.set_xticklabels([f'{r}px' for r in RADII], fontsize=12, color='#d0d0e8')
-ax1.set_xlabel('Boundary Tolerance (pixels)', fontsize=11, color='#a0a0c0', labelpad=8)
-ax1.set_ylabel('Boundary F1-Score (%)', fontsize=11, color='#a0a0c0')
-ax1.set_title('Boundary F1 @ Tolerance\n(경계선 허용 오차별 F1 비교)',
-              fontsize=13, fontweight='bold', color='white', pad=14)
-ax1.tick_params(colors='#a0a0c0', labelsize=10)
-ax1.set_ylim(0, y_top+16)
-ax1.legend(fontsize=10, facecolor='#0f0f1a', edgecolor='#444455', labelcolor='white')
-ax1.grid(axis='y', ls='--', alpha=0.18, color='#a0a0c0', zorder=0)
-for sp in ax1.spines.values(): sp.set_visible(False)
+ax0.text(
+    2.52,
+    (mu_h + mu_u) / 2,
+    f'U-Net\n▼ {reduce_px:.1f} px\nreduced',
+    color='#7effc4',
+    fontsize=13,
+    fontweight='bold',
+    va='center'
+)
 
-# ── 전체 제목 ─────────────────────────────────────────
-best_bf1_delta = max(bf1_u_m[i]-bf1_h_m[i] for i in range(len(RADII)))
-best_bf1_r     = RADII[[bf1_u_m[i]-bf1_h_m[i] for i in range(len(RADII))].index(best_bf1_delta)]
+ax0.set_xticks([1, 2])
+ax0.set_xticklabels(
+    [
+        'Heuristic\n(Color+Texture)',
+        'Proposed\nU-Net'
+    ],
+    fontsize=13,
+    color='#d0d0e8'
+)
 
-if reduce_px > 0:
-    headline = (f"U-Net reduced boundary location error by {reduce_px:.1f} px  "
-                f"({mu_h:.1f}px → {mu_u:.1f}px)  |  "
-                f"Boundary F1 improved by up to +{best_bf1_delta:.1f}% at {best_bf1_r}px tolerance")
-    color_title = '#7effc4'
-else:
-    headline = (f"Boundary F1 improved by up to +{best_bf1_delta:.1f}% at {best_bf1_r}px tolerance  |  "
-                f"MBD: Heuristic={mu_h:.1f}px, U-Net={mu_u:.1f}px")
-    color_title = '#5cd6ff'
+ax0.set_ylabel(
+    'Mean Boundary Distance (pixels)',
+    fontsize=12,
+    color='#a0a0c0'
+)
 
-fig.suptitle(f'Boundary Error Analysis: Heuristic vs Proposed U-Net\n{headline}',
-             fontsize=12, fontweight='bold', color=color_title, y=1.04)
+ax0.set_title(
+    f'Boundary Location Error (MBD)\n'
+    f'(Training-set JSON annotations, {n_mbd} matched pairs)',
+    fontsize=14,
+    fontweight='bold',
+    color='white',
+    pad=14
+)
+
+ax0.tick_params(
+    colors='#a0a0c0',
+    labelsize=11
+)
+
+ax0.set_ylim(0, clip_val * 1.32)
+
+ax0.legend(
+    fontsize=11,
+    facecolor='#0f0f1a',
+    edgecolor='#444455',
+    labelcolor='white',
+    loc='upper right'
+)
+
+ax0.grid(
+    axis='y',
+    linestyle='--',
+    alpha=0.18,
+    color='#a0a0c0'
+)
+
+for spine in ax0.spines.values():
+    spine.set_visible(False)
+
+fig1.suptitle(
+    f'U-Net reduced boundary error by {reduce_px:.1f} px '
+    f'({mu_h:.1f} px → {mu_u:.1f} px)',
+    fontsize=13,
+    fontweight='bold',
+    color='#7effc4',
+    y=1.02
+)
 
 plt.tight_layout()
-os.makedirs(os.path.dirname(SAVE_PATH), exist_ok=True)
-fig.savefig(
-    SAVE_PATH,
-    dpi=180,
-    bbox_inches="tight",
-    facecolor=fig.get_facecolor()
+
+os.makedirs(
+    os.path.dirname(SAVE_MBD),
+    exist_ok=True
 )
-print(f"Saved: {SAVE_PATH}")
-plt.close()
+
+fig1.savefig(
+    SAVE_MBD,
+    dpi=180,
+    bbox_inches='tight',
+    facecolor=fig1.get_facecolor()
+)
+
+print(f"Saved: {SAVE_MBD}")
+plt.close(fig1)
+
+
+# =====================================================
+# Figure 2: Boundary F1
+# =====================================================
+fig2, ax1 = plt.subplots(figsize=(13, 9))
+fig2.patch.set_facecolor('#0f0f1a')
+ax1.set_facecolor('#0f0f1a')
+
+x = np.arange(len(RADII))
+w = 0.36
+
+ax1.bar(
+    x - w/2,
+    bf1_h_m,
+    w,
+    label='Heuristic (Color+Texture)',
+    color=COLOR_H,
+    alpha=0.88,
+    zorder=3,
+    yerr=bf1_h_s,
+    capsize=3
+)
+
+ax1.bar(
+    x + w/2,
+    bf1_u_m,
+    w,
+    label='Proposed U-Net',
+    color=COLOR_U,
+    alpha=0.88,
+    zorder=3,
+    yerr=bf1_u_s,
+    capsize=3
+)
+
+y_top = max(
+    max(bf1_u_m),
+    max(bf1_h_m)
+)
+
+for i, (u, h) in enumerate(
+    zip(bf1_u_m, bf1_h_m)
+):
+    delta = u - h
+
+    ax1.text(
+        i,
+        max(u, h) + 5,
+        f'Δ {delta:+.1f}%',
+        ha='center',
+        fontsize=10,
+        color='#7effc4',
+        fontweight='bold'
+    )
+
+ax1.set_xticks(x)
+
+ax1.set_xticklabels(
+    [f'{r}px' for r in RADII],
+    fontsize=12,
+    color='#d0d0e8'
+)
+
+ax1.set_xlabel(
+    'Boundary Tolerance (pixels)',
+    fontsize=12,
+    color='#a0a0c0'
+)
+
+ax1.set_ylabel(
+    'Boundary F1-Score (%)',
+    fontsize=12,
+    color='#a0a0c0'
+)
+
+ax1.set_title(
+    'Boundary F1 @ Tolerance\n'
+    '(Training-set JSON annotation comparison)',
+    fontsize=14,
+    fontweight='bold',
+    color='white',
+    pad=14
+)
+
+ax1.tick_params(
+    colors='#a0a0c0',
+    labelsize=11
+)
+
+ax1.set_ylim(
+    0,
+    y_top + 16
+)
+
+ax1.legend(
+    fontsize=11,
+    facecolor='#0f0f1a',
+    edgecolor='#444455',
+    labelcolor='white'
+)
+
+ax1.grid(
+    axis='y',
+    linestyle='--',
+    alpha=0.18,
+    color='#a0a0c0',
+    zorder=0
+)
+
+for spine in ax1.spines.values():
+    spine.set_visible(False)
+
+best_delta = max(
+    bf1_u_m[i] - bf1_h_m[i]
+    for i in range(len(RADII))
+)
+
+fig2.suptitle(
+    f'U-Net Boundary F1 improvement '
+    f'(maximum: +{best_delta:.1f} percentage points)',
+    fontsize=13,
+    fontweight='bold',
+    color='#7effc4',
+    y=1.01
+)
+
+plt.tight_layout()
+
+os.makedirs(
+    os.path.dirname(SAVE_F1),
+    exist_ok=True
+)
+
+fig2.savefig(
+    SAVE_F1,
+    dpi=180,
+    bbox_inches='tight',
+    facecolor=fig2.get_facecolor()
+)
+
+print(f"Saved: {SAVE_F1}")
+plt.close(fig2)
+
 print("All done!")
