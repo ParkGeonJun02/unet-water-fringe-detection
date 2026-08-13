@@ -353,3 +353,119 @@ U-Net 단독 방식 중 하나를 선택하는 것이 아니라,
 
 이를 통해 초기 Heuristic Baseline과 학습 기반 U-Net을
 동일한 평가 조건에서 비교할 수 있는 개선 구조를 구축하였습니다.
+
+
+
+---
+
+## 5. Test Setup & Quantitative Verification
+
+### 5.1 Test Setup
+
+U-Net 적용이 실제 성능 개선으로 이어졌는지 확인하기 위해
+**Color + Texture Heuristic Baseline과 U-Net을 동일한 조건에서 비교**하였습니다.
+
+| Item | Test Condition |
+|---|---|
+| Input | RGB Aerial Image |
+| Image Size | 512 × 512 |
+| Reference | JSON Polygon Annotation 기반 Binary Mask |
+| Baseline | Color + Texture Heuristic |
+| Proposed Method | U-Net Binary Segmentation |
+| U-Net Threshold | 0.5 |
+| Region Metrics | IoU / Precision / Recall / F1 |
+| Boundary Metrics | MBD / Boundary F1 |
+
+영역 자체의 분할 정확도뿐만 아니라,
+**실제 수변 경계가 Annotation 경계와 얼마나 가까운 위치에 형성되는지**까지
+별도로 검증하였습니다.
+
+> **Evaluation Note**  
+> 본 정량 비교는 JSON Annotation이 존재하는 **학습 데이터 기반 Baseline 비교**입니다.  
+> 따라서 독립적인 Test-set Generalization 성능이 아니라,
+> 동일 데이터 조건에서 Heuristic 대비 U-Net의 상대적인 개선 효과를 검증하기 위한 결과입니다.
+
+---
+
+### 5.2 Region-level Performance
+
+JSON Annotation 기반 Reference Mask와 예측 Mask를 비교하여
+Region-level 성능을 평가하였습니다.
+
+| Metric | Heuristic | U-Net | Improvement |
+|---|---:|---:|---:|
+| **IoU** | 62.67% | **69.51%** | **+6.84%p** |
+| **Precision** | 76.77% | **79.99%** | **+3.22%p** |
+| **Recall** | 80.83% | **85.88%** | **+5.05%p** |
+| **F1-Score** | 78.74% | **82.82%** | **+4.08%p** |
+
+<p align="center">
+  <img src="results/water_mask_comparison.png" width="650">
+</p>
+
+모든 주요 Region-level 지표에서 U-Net이 Heuristic Baseline보다 높은 성능을 나타냈으며,
+특히 **IoU가 62.67%에서 69.51%로 6.84%p 향상**되었습니다.
+
+이는 고정된 Color / Texture 규칙만을 사용하는 방식보다
+학습 기반 U-Net이 수변 영역의 공간적 특징을 더 효과적으로 표현할 수 있음을 확인한 결과입니다.
+
+---
+
+### 5.3 Boundary-level Performance
+
+Region-level 성능 향상이 실제 수변 경계 위치의 개선으로 이어지는지 확인하기 위해
+예측 Mask와 JSON Annotation에서 Boundary를 추출하여 추가 평가하였습니다.
+
+#### Mean Boundary Distance (MBD)
+
+| Method | Mean Boundary Distance |
+|---|---:|
+| Heuristic | 37.0 px |
+| **U-Net** | **21.8 px** |
+| **Reduction** | **15.2 px** |
+
+<p align="center">
+  <img src="results/boundary_mbd.png" width="650">
+</p>
+
+U-Net 적용 후 평균 경계 위치 오차가
+**37.0 px → 21.8 px로 15.2 px 감소**하였습니다.
+
+즉, 영역의 중첩 성능뿐만 아니라
+예측된 수변 경계 자체도 Reference Boundary에 더 가까워졌음을 확인하였습니다.
+
+#### Boundary F1 @ Pixel Tolerance
+
+| Tolerance | Heuristic | U-Net | Improvement |
+|---|---:|---:|---:|
+| **1 px** | 37.7% | **54.8%** | **+17.1%p** |
+| **5 px** | 42.9% | **65.7%** | **+22.8%p** |
+| **10 px** | 53.7% | **72.8%** | **+19.1%p** |
+| **15 px** | 58.4% | **77.6%** | **+19.2%p** |
+
+<p align="center">
+  <img src="results/boundary_f1_bar.png" width="650">
+</p>
+
+모든 Pixel Tolerance에서 U-Net의 Boundary F1이 Baseline보다 높게 나타났으며,
+특히 **5 px 조건에서 42.9% → 65.7%로 22.8%p 향상**되었습니다.
+
+---
+
+### 5.4 Verification Summary
+
+정량 검증 결과, U-Net 적용을 통해 다음 두 관점의 개선을 확인하였습니다.
+
+> **Region-level**  
+> IoU **62.67% → 69.51%**, F1 **78.74% → 82.82%**
+>
+> **Boundary-level**  
+> MBD **37.0 px → 21.8 px**, Boundary F1은 모든 Tolerance에서 개선
+>
+> **결론**  
+> Color + Texture 기반 고정 규칙보다,
+> U-Net 기반 학습 방식이 **수변 영역 분할과 경계 위치 정확도 모두에서 더 높은 성능**을 보였습니다.
+
+따라서 초기 Heuristic Baseline에서 확인한 한계를
+학습 기반 Segmentation으로 개선하고,
+그 효과를 **Region-level과 Boundary-level 두 관점에서 정량적으로 검증**하였습니다.
