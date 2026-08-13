@@ -1,19 +1,24 @@
 ﻿"""
-train.py - U-Net 이진 물 감지(Water Binary Segmentation) 학습 스크립트
+train.py
 
-[설계 의도]
-  물과 숲은 항공 영상에서 색이 비슷해 SAM만으로 구분하기 어렵습니다.
-  따라서 U-Net을 먼저 사용해 "이 픽셀이 물(수변)인가 아닌가"를 이진 분류합니다.
-  학습된 가중치(best_unet_model.pth)는 predict_sam_supervised_clean.py에서
-  SAM + 텍스처 분석과 결합되어 최종 4분류(물/숲/모래사장/기타)를 수행합니다.
+Training script for U-Net binary water segmentation
+using high-resolution aerial imagery.
 
-[파이프라인]
-  train.py -> best_unet_model.pth (water probability map)
-      |
-      v
-  predict_sam_supervised_clean.py
-      -> 물(파랑) / 숲(초록) / 모래사장·나지(주황) / 기타(회색) 4분류 출력
+Design:
+- The U-Net classifies each pixel as water or non-water.
+- The trained model generates a water probability map.
+- The water prediction is later combined with texture/color-based
+  post-processing in predict_hybrid.py for terrain boundary analysis.
+
+Training pipeline:
+Aerial image
+→ preprocessing / augmentation
+→ U-Net
+→ binary water mask prediction
+→ validation loss evaluation
+→ best model checkpoint
 """
+
 import os
 import csv
 import torch
@@ -170,7 +175,7 @@ def main():
             torch.save(model.state_dict(), "checkpoint/best_unet_model.pth")
             print(f"  -> Best model saved! (Val Loss: {best_val_loss:.4f})")
 
-    print("\n[DONE] Training complete! Use predict_sam_supervised_clean.py for 4-class prediction.")
+    print("\n[DONE] Training complete! Use predict_hybrid.py for hybrid prediction.")
 
 
 if __name__ == "__main__":
