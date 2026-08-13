@@ -33,26 +33,4 @@
 
 ### Development Flow
 
-```text
-Aerial Image
-     │
-     ▼
-Data / Annotation Processing
-     │
-     ├───────────────┐
-     ▼               ▼
-Color + Texture      U-Net
-Heuristic Baseline   Segmentation
-     │               │
-     └───────┬───────┘
-             ▼
-      동일 조건 성능 비교
-             │
-             ▼
- IoU / Precision / Recall / F1
-             │
-             ▼
-     Boundary Extraction
-             │
-             ▼
- MBD / Boundary F1 Verification
+![Development Flow](UNET_Development_Flow.png)
