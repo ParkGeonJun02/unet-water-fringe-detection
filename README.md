@@ -482,12 +482,19 @@ Heuristic Baseline과 U-Net 기반 결과를 비교하여
 수변 영역 및 주변 경계의 시각적 차이를 확인하였습니다.
 
 <p align="center">
-  <img src="results/heuristic_pred_AP_HR_2021_0240_06.png" width="48%">
-  <img src="results/unet_pred_AP_HR_2021_0240_06.png" width="48%">
+  <img src="results/heuristic_pred_AP_HR_2021_0240_06.png" width="650">
 </p>
 
 <p align="center">
-  <b>Left: Color + Texture Heuristic &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; Right: U-Net Hybrid Prediction</b>
+  <b>Color + Texture Heuristic</b>
+</p>
+
+<p align="center">
+  <img src="results/unet_pred_AP_HR_2021_0240_06.png" width="650">
+</p>
+
+<p align="center">
+  <b>U-Net Hybrid Prediction</b>
 </p>
 
 Heuristic 방식은 사전에 정의한 Color / Texture 조건에 따라 수변 후보를 결정하는 반면,
@@ -529,21 +536,9 @@ U-Net 적용 후 **영역 분할 성능뿐만 아니라 수변 경계 위치 정
 
 개발 과정은 다음과 같이 정리할 수 있습니다.
 
-```text
-항공영상 특성 관찰
-        ↓
-Color-only 접근
-        ↓
-물 / 숲의 색상 중첩 문제 발견
-        ↓
-Color + Texture Baseline 설계
-        ↓
-고정 Threshold 기반 방식의 한계 분석
-        ↓
-U-Net Binary Segmentation 적용
-        ↓
-Region / Boundary 성능 분리 검증
-```
+<p align="center">
+  <img src="Engineering_Takeaways_insert_image.png" width="400">
+</p>
 
 특히 단순히 결과 이미지가 좋아 보이는지를 판단하는 것이 아니라,
 
