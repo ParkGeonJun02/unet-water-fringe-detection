@@ -101,7 +101,7 @@ Annotation Code의 공식 세부 의미를 임의로 재정의하지 않고,
 보완적으로 결합하도록 구성하였습니다.
 
 <p align="center">
-  <img src="Training_Mask_Construction_inserted_image.png" width="600">
+  <img src="Training_Mask_Construction_inserted_image.png" width="400">
 </p>
 
 Color + Texture 기반 후보 영역은 다음 영상 특성을 이용합니다.
