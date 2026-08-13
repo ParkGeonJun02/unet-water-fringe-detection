@@ -457,7 +457,7 @@ U-Net 적용 후 평균 경계 위치 오차가
 정량 검증 결과, U-Net 적용을 통해 다음 두 관점의 개선을 확인하였습니다.
 
 <p align="center"> 
-  <img src="Verification_Summary_insert_image.png" width="650"> 
+  <img src="Verification_Summary_insert_image.png" width="1000"> 
 </p>
 
 > Color + Texture 기반 고정 규칙보다,
@@ -466,3 +466,95 @@ U-Net 적용 후 평균 경계 위치 오차가
 따라서 초기 Heuristic Baseline에서 확인한 한계를
 학습 기반 Segmentation으로 개선하고,
 그 효과를 **Region-level과 Boundary-level 두 관점에서 정량적으로 검증**하였습니다.
+
+
+
+
+
+---
+
+## 6. Results, Limitations & Engineering Takeaways
+
+### 6.1 Qualitative Results
+
+정량 지표뿐만 아니라 실제 항공영상에서
+Heuristic Baseline과 U-Net 기반 결과를 비교하여
+수변 영역 및 주변 경계의 시각적 차이를 확인하였습니다.
+
+<p align="center">
+  <img src="results/heuristic_pred_AP_HR_2021_0240_06.png" width="48%">
+  <img src="results/unet_pred_AP_HR_2021_0240_06.png" width="48%">
+</p>
+
+<p align="center">
+  <b>Left: Color + Texture Heuristic &nbsp;&nbsp;&nbsp; | &nbsp;&nbsp;&nbsp; Right: U-Net Hybrid Prediction</b>
+</p>
+
+Heuristic 방식은 사전에 정의한 Color / Texture 조건에 따라 수변 후보를 결정하는 반면,
+U-Net은 학습된 영상 특징을 기반으로 Water Probability Map을 생성합니다.
+
+정량 평가 결과와 함께 확인했을 때,
+U-Net 적용 후 **영역 분할 성능뿐만 아니라 수변 경계 위치 정확도에서도 개선**을 확인하였습니다.
+
+---
+
+### 6.2 Limitations & Future Work
+
+본 프로젝트를 통해 Heuristic 대비 U-Net의 성능 개선을 확인하였지만,
+다음과 같은 한계가 남아 있습니다.
+
+- 정량 비교에 사용한 JSON Annotation 데이터가 **학습 데이터에 포함된 데이터**이므로,
+  독립 Test-set에 대한 Generalization 성능으로 해석할 수 없음
+- 학습용 Binary Mask가 JSON Annotation과 Color / Texture 기반 후보 Mask를
+  보완적으로 결합하여 구성되어 있어, **순수 Annotation 기반 학습과의 성능 차이는 별도 검증이 필요**
+- U-Net은 Water-related / Other의 **Binary Segmentation** 구조이며,
+  Forest 및 Sand/Road 영역은 규칙 기반 영상처리를 이용하여 분석
+- 최종 Pipeline에는 Threshold `0.5`, Morphological Processing 등
+  일부 고정 Parameter가 여전히 존재
+
+향후에는 다음 방향으로 개선할 수 있습니다.
+
+1. JSON Ground Truth가 충분히 확보된 독립 Validation / Test Dataset 구성
+2. Annotation 기반 Training Mask와 Heuristic 보완 Mask의 영향을 분리하여 비교
+3. Water / Forest / Sand-Road 등을 직접 학습하는 Multi-class Segmentation 적용
+4. 다양한 지역 및 촬영 조건에서의 Generalization 성능 검증
+
+---
+
+### 6.3 Engineering Takeaways
+
+본 프로젝트는 단순히 U-Net 모델을 적용하는 것보다,
+**문제를 관찰하고 → Baseline을 만들고 → 한계를 분석하고 → 개선안을 적용한 뒤 → 동일한 기준으로 검증하는 과정**
+이 중요하다는 점을 확인한 프로젝트였습니다.
+
+개발 과정은 다음과 같이 정리할 수 있습니다.
+
+```text
+항공영상 특성 관찰
+        ↓
+Color-only 접근
+        ↓
+물 / 숲의 색상 중첩 문제 발견
+        ↓
+Color + Texture Baseline 설계
+        ↓
+고정 Threshold 기반 방식의 한계 분석
+        ↓
+U-Net Binary Segmentation 적용
+        ↓
+Region / Boundary 성능 분리 검증
+```
+
+특히 단순히 결과 이미지가 좋아 보이는지를 판단하는 것이 아니라,
+
+- **Baseline을 먼저 정의하고**
+- **동일한 데이터 조건에서 비교하며**
+- **Region-level과 Boundary-level KPI를 분리하여**
+- **개선 효과와 평가 한계를 함께 확인**
+
+하는 방식으로 개발·검증 과정을 구성하였습니다.
+
+> **Engineering Perspective**  
+> 모델 자체의 복잡도보다  
+> **문제 정의 → 원인 분석 → 개선 설계 → 시험 조건 설정 → 정량 검증**의 흐름을
+> 명확하게 만드는 것이 중요하다는 점을 경험하였습니다.
