@@ -256,3 +256,100 @@ Color + Texture 방식은 최종 모델이 아니라,
 > 영역 분할과 경계 검출 성능을 개선하는가?**
 
 를 정량적으로 확인하는 방향으로 프로젝트를 진행하였습니다.
+
+
+---
+
+## 4. Problem Analysis & U-Net Improvement
+
+### 4.1 Problem Analysis — Limitation of Rule-based Detection
+
+Color + Texture를 결합하면서 Color-only 방식보다 물과 숲을 구분할 수 있는 기준은 늘어났지만,
+Heuristic 방식은 여전히 **사전에 설정한 Threshold와 규칙에 결과가 크게 의존**한다는 한계가 있었습니다.
+
+Baseline에서는 다음과 같은 조건을 직접 설정하여 수변 후보 영역을 판단하였습니다.
+
+- RGB Channel Threshold
+- Green / Red Channel 관계
+- Local Standard Deviation Threshold
+- Morphological Filtering
+- Connected Component 기반 영역 정제
+
+이 방식은 조건에 부합하는 영상에서는 수변 후보를 빠르게 추출할 수 있지만,
+영상의 밝기, 색상 분포, 주변 지형 및 질감 특성이 달라질 경우
+동일한 고정 Threshold를 안정적으로 적용하기 어렵다는 구조적인 문제가 있습니다.
+
+즉, 다음과 같은 한계를 확인하였습니다.
+
+> **사람이 정의한 Color / Texture 조건만으로 다양한 항공영상의 수변 특징을 모두 표현하기 어렵다.**
+
+따라서 규칙을 계속 추가하는 방식보다,
+영상으로부터 수변 영역의 특징을 학습할 수 있는 Segmentation Model이 필요하다고 판단하였습니다.
+
+---
+
+### 4.2 Improvement — U-Net Binary Segmentation
+
+Heuristic의 고정 규칙 의존성을 줄이기 위해
+Pixel-level Semantic Segmentation 구조인 **U-Net**을 적용하였습니다.
+
+U-Net은 Encoder에서 영상의 특징을 단계적으로 추출하고,
+Decoder에서 공간 정보를 복원하면서 Skip Connection을 통해
+저수준 위치 정보와 고수준 특징 정보를 함께 활용하도록 구성되어 있습니다.
+
+본 프로젝트에서는 RGB 항공영상을 입력으로 받아
+각 Pixel이 수변 관련 영역일 확률을 나타내는
+**Water Probability Map**을 생성하도록 학습하였습니다.
+
+<p align="center">
+  <img src="Improvement_U_Net_Binary_Segmentation_insert_image.png" width="400">
+</p>
+
+주요 학습 설정은 다음과 같습니다.
+
+| Item | Setting |
+|---|---|
+| Input Size | 512 × 512 |
+| Architecture | U-Net |
+| Input Channel | RGB, 3 channels |
+| Output Channel | 1 |
+| Loss | BCEWithLogitsLoss |
+| Positive Class Weight | 3.0 |
+| Optimizer | Adam |
+| Learning Rate | 1e-4 |
+| Epochs | 30 |
+
+수변 관련 Positive Class의 불균형을 고려하여
+`BCEWithLogitsLoss(pos_weight=3.0)`을 적용하였으며,
+Validation Loss가 가장 낮은 모델을 최종 Checkpoint로 저장하였습니다.
+
+---
+
+### 4.3 Prediction & Post-processing
+
+U-Net의 출력 Probability Map을 그대로 최종 결과로 사용하지 않고,
+Threshold 적용 이후 영상 후처리를 수행하여 Binary Mask를 정제하였습니다.
+
+주요 처리 과정은 다음과 같습니다.
+
+1. U-Net Probability Map 생성
+2. Threshold `0.5`를 적용하여 Binary Mask 생성
+3. Hole Filling
+4. Morphological Opening / Closing
+5. Connected Component 분석
+6. 주요 수변 영역 추출
+7. Boundary Extraction
+
+또한 최종 시각화 단계에서는
+Color 및 Local Texture 정보를 이용하여 Forest와 Sand/Road 후보 영역을 추가적으로 분석하였습니다.
+
+즉, 최종 구조는 완전한 규칙 기반 방식이나
+U-Net 단독 방식 중 하나를 선택하는 것이 아니라,
+
+> **U-Net으로 핵심 수변 영역을 분할하고,  
+> 규칙 기반 영상처리를 후처리 단계에 활용하는 Hybrid Pipeline**
+
+으로 구성하였습니다.
+
+이를 통해 초기 Heuristic Baseline과 학습 기반 U-Net을
+동일한 평가 조건에서 비교할 수 있는 개선 구조를 구축하였습니다.
