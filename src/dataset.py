@@ -67,7 +67,7 @@ class WaterFringeDataset(Dataset):
         # --- 2. 이진 물 마스크 생성 ---
         water_mask = np.zeros((height, width), dtype=np.uint8)
 
-        # 2a. JSON 레이블 기반: CODE=50 (수역) 폴리곤 버닝
+        # 2a. JSON annotation 기반 수변 관련 Polygon을 Binary Mask로 변환
         if os.path.exists(label_path):
             try:
                 with open(label_path, "r", encoding="utf-8") as f:
@@ -77,7 +77,7 @@ class WaterFringeDataset(Dataset):
                 for feat in features:
                     geo = feat.get("geometry", {})
                     code = str(feat.get("properties", {}).get("CODE", "")).strip()
-                    # CODE=50: 수역 (물), CODE=20/40/511: 수변초목도 포함
+                    # Project-defined water-related annotation codes used for the binary mask
                     if code in ["50", "20", "40", "511"] and geo.get("coordinates"):
                         try:
                             poly_obj = shape(geo)
