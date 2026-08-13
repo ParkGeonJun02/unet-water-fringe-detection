@@ -231,15 +231,9 @@ U-Net은 512 × 512 크기의 RGB 영상을 입력으로 받아
 
 따라서 초기 Color 기반 접근을 다음과 같이 확장하였습니다.
 
-```text
-Color-only Detection
-        ↓
-물 / 숲의 유사한 색상 문제 확인
-        ↓
-Local Texture 특성 추가
-        ↓
-Color + Texture Heuristic Baseline
-```
+<p align="center">
+  <img src="Initial_Approach_From_Color_to_Color_and_Texture_insert_image.png" width="400">
+</p>
 
 최종 Heuristic Baseline에서는 다음 정보를 함께 사용하였습니다.
 
