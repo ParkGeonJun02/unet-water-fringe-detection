@@ -12,19 +12,25 @@ import cv2
 
 class WaterFringeDataset(Dataset):
     """
-    U-Net 이진 물 감지(Water Detection) 학습용 Dataset.
-    
+    U-Net 이진 수변 영역 분할 학습용 Dataset.
+
     [설계 의도]
-    - 물과 숲은 색이 비슷해서 SAM만으로 구분이 어려움.
-    - 따라서 U-Net이 먼저 "물인가 아닌가"를 이진 분류(binary)로 판단.
-    - 이 확률맵(water probability map)을 predict_sam_supervised_clean.py에서
-      SAM + 텍스처 분석과 결합해 물/숲/모래사장/기타 4분류를 수행.
-    
+    - 고해상도 항공영상에서 수변 관련 영역을 픽셀 단위로 분할하기 위한
+      U-Net 학습 데이터를 구성합니다.
+    - U-Net은 각 픽셀에 대해 수변 영역 / 비수변 영역의 이진 분할을 수행합니다.
+    - 학습된 U-Net의 Water Probability Map은 predict_hybrid.py에서
+      색상 및 로컬 질감(Texture) 기반 후처리와 결합하여
+      최종 지형 경계 분석에 사용됩니다.
+
     [마스크 생성 방법]
-    1. JSON 레이블이 있으면: CODE=50(수역) 폴리곤을 마스크에 버닝(1로 설정)
-    2. JSON이 없어도: RGB 색상 + 로컬 질감(texture) 분석으로 물 자동 감지
-       - 어두운 RGB + 파랑 계열 + 질감 매끄러움(Local Std < 5.0)
-    -> 최종 마스크: 물=1, 비물=0 (이진 float 마스크)
+    1. JSON Annotation이 존재하는 경우:
+       프로젝트에서 정의한 수변 관련 CODE의 Polygon을 Raster Mask로 변환합니다.
+    2. RGB 색상 및 Local Texture 조건을 이용한 수역 후보 Mask를 추가로 생성합니다.
+    3. 두 Mask를 결합하여 최종 Binary Training Mask를 구성합니다.
+
+    최종 마스크:
+    - 수변 관련 영역 = 1
+    - 기타 영역 = 0
     """
     def __init__(self, img_dir, label_dir, transform=None):
         self.img_dir = img_dir
