@@ -1,12 +1,18 @@
 """
-evaluate.py - U-Net 이진 물 감지기 검증셋 정량 평가 스크립트
+evaluate.py
 
-계산 메트릭:
+Evaluation script for U-Net binary water segmentation.
+
+Metrics:
 - IoU (Intersection over Union)
-- Dice Coefficient (F1-Score)
-- Precision (정밀도)
-- Recall (재현율)
-- OA (Overall Accuracy, 전체 정확도)
+- Precision
+- Recall
+- Overall Accuracy (OA)
+
+Important:
+This script requires ground-truth label files in the evaluation label directory.
+For the portfolio results reported in this repository, the JSON GT-based
+comparison scripts in the analysis/ directory are used separately.
 """
 
 import os
@@ -46,11 +52,26 @@ def calculate_metrics(preds, targets, smooth=1e-6):
     return iou, precision, recall, oa
 
 def main():
-    CHECKPOINT = "checkpoint/best_sam_unet_model.pth"
+    CHECKPOINT = "checkpoint/best_unet_model.pth"
     IMG_DIR = "data/processed/val/images"
     LABEL_DIR = "data/processed/val/labels"
     WATER_THRESHOLD = 0.5
 
+    # Evaluation requires actual JSON ground-truth labels.
+    if not os.path.isdir(LABEL_DIR):
+        print(f"[ERROR] Label directory not found: {LABEL_DIR}")
+        sys.exit(1)
+
+    json_labels = [
+        f for f in os.listdir(LABEL_DIR)
+        if f.lower().endswith(".json")
+    ]
+
+    if len(json_labels) == 0:
+        print("[ERROR] No JSON ground-truth labels found.")
+        print("Evaluation stopped to avoid using automatically generated masks as GT.")
+        sys.exit(1)
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Evaluation device: {device}")
 
