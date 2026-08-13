@@ -482,7 +482,7 @@ Heuristic Baseline과 U-Net 기반 결과를 비교하여
 수변 영역 및 주변 경계의 시각적 차이를 확인하였습니다.
 
 <p align="center">
-  <img src="results/heuristic_pred_AP_HR_2021_0240_06.png" width="650">
+  <img src="results/heuristic_pred_AP_HR_2021_0240_06.png" width="1000">
 </p>
 
 <p align="center">
@@ -490,7 +490,7 @@ Heuristic Baseline과 U-Net 기반 결과를 비교하여
 </p>
 
 <p align="center">
-  <img src="results/unet_pred_AP_HR_2021_0240_06.png" width="650">
+  <img src="results/unet_pred_AP_HR_2021_0240_06.png" width="1000">
 </p>
 
 <p align="center">
@@ -537,7 +537,7 @@ U-Net 적용 후 **영역 분할 성능뿐만 아니라 수변 경계 위치 정
 개발 과정은 다음과 같이 정리할 수 있습니다.
 
 <p align="center">
-  <img src="Engineering_Takeaways_insert_image.png" width="400">
+  <img src="Engineering_Takeaways_insert_image.png" width="600">
 </p>
 
 특히 단순히 결과 이미지가 좋아 보이는지를 판단하는 것이 아니라,
