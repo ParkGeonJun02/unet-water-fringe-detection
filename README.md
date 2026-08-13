@@ -64,7 +64,9 @@
 원본 항공영상과 JSON Polygon Annotation을 이용하여
 U-Net 학습에 사용할 Binary Mask를 구성하였습니다.
 
-![Input Data Environment](Input_data_enviroment_insert_image.png)
+<p align="center">
+  <img src="Input_data_enviroment_insert_image.png" width="600">
+</p>
 
 ---
 
@@ -98,7 +100,9 @@ Annotation Code의 공식 세부 의미를 임의로 재정의하지 않고,
 항공영상의 RGB 색상 및 Local Texture 조건을 이용한 후보 영역을
 보완적으로 결합하도록 구성하였습니다.
 
-![Training Mask Construction](Training_Mask_Construction_inserted_image.png)
+<p align="center">
+  <img src="Training_Mask_Construction_inserted_image.png" width="600">
+</p>
 
 Color + Texture 기반 후보 영역은 다음 영상 특성을 이용합니다.
 
@@ -157,7 +161,9 @@ U-Net은 512 × 512 크기의 RGB 영상을 입력으로 받아
 
 따라서 프로젝트의 전체 개발·검증 과정은 다음과 같이 구성하였습니다.
 
-![Development Constraints](Development_Constraints_inserted_image.png)
+<p align="center">
+  <img src="Development_Constraints_inserted_image.png" width="600">
+</p>
 
 이를 통해 단순히 모델의 출력 영상을 확인하는 것이 아니라,
 **Baseline 대비 성능 개선 여부와 수변 경계 위치의 정확성까지 정량적으로 검증**
