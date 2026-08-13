@@ -31,7 +31,7 @@ from src.model import UNet
 
 # ── 설정 ─────────────────────────────────────────────────────────
 IMG_SIZE     = 512
-HECKPOINT = "checkpoint/best_unet_model.pth"
+CHECKPOINT = "checkpoint/best_unet_model.pth"
 
 # 물 판별 임계값
 WATER_THRESHOLD = 0.5
