@@ -21,6 +21,11 @@ import cv2
 import rasterio
 from tqdm import tqdm
 import json
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
 from shapely.geometry import shape
 from rasterio.features import rasterize
 
@@ -39,11 +44,15 @@ def calculate_metrics(preds, targets, smooth=1e-6):
     iou = (tp + smooth) / (tp + fp + fn + smooth)
     precision = (tp + smooth) / (tp + fp + smooth)
     recall = (tp + smooth) / (tp + fn + smooth)
-    
+
+    f1 = (
+        2 * precision * recall / (precision + recall + smooth)
+    )
+
     total_pixels = tp + fp + fn + tn
     oa = (tp + tn) / total_pixels if total_pixels > 0 else 0.0
 
-    return iou, precision, recall, oa
+    return iou, precision, recall, f1, oa
 
 def compute_heuristic_water(image_rgb):
     r = image_rgb[:, :, 0].astype(np.float32)
@@ -116,8 +125,22 @@ def main():
         ]
     )[:150]
 
-    h_metrics = {"iou": 0.0, "precision": 0.0, "recall": 0.0, "oa": 0.0}
-    u_metrics = {"iou": 0.0, "precision": 0.0, "recall": 0.0, "oa": 0.0}
+    h_metrics = {
+        "iou": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "oa": 0.0
+    }
+
+    u_metrics = {
+        "iou": 0.0,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "oa": 0.0
+    }
+    
     count = 0
 
     for fname in tqdm(img_files, desc="Comparing"):
@@ -159,19 +182,21 @@ def main():
             probs = torch.sigmoid(outputs)[0, 0].cpu().numpy()
         u_pred_mask = (probs > 0.5).astype(np.uint8)
         u_pred_tensor = torch.from_numpy(u_pred_mask).byte()
-
+        
         # Compute metrics
-        h_iou, h_prec, h_rec, h_oa = calculate_metrics(h_pred_tensor, gt_tensor)
-        u_iou, u_prec, u_rec, u_oa = calculate_metrics(u_pred_tensor, gt_tensor)
+        h_iou, h_prec, h_rec, h_f1, h_oa = calculate_metrics(h_pred_tensor, gt_tensor)
+        u_iou, u_prec, u_rec, u_f1, u_oa = calculate_metrics(u_pred_tensor, gt_tensor)
 
         h_metrics["iou"] += h_iou
         h_metrics["precision"] += h_prec
         h_metrics["recall"] += h_rec
+        h_metrics["f1"] += h_f1
         h_metrics["oa"] += h_oa
-
+        
         u_metrics["iou"] += u_iou
         u_metrics["precision"] += u_prec
         u_metrics["recall"] += u_rec
+        u_metrics["f1"] += u_f1
         u_metrics["oa"] += u_oa
 
         count += 1
@@ -193,14 +218,97 @@ def main():
     print(f"- Mean IoU: {h_metrics['iou']*100:.2f}%")
     print(f"- Recall: {h_metrics['recall']*100:.2f}%")
     print(f"- Precision: {h_metrics['precision']*100:.2f}%")
+    print(f"- F1-Score: {h_metrics['f1']*100:.2f}%")
     print(f"- Overall Accuracy (OA): {h_metrics['oa']*100:.2f}%")
     
     print("\n[Approach B] U-Net Model:")
     print(f"- Mean IoU: {u_metrics['iou']*100:.2f}%")
     print(f"- Recall: {u_metrics['recall']*100:.2f}%")
     print(f"- Precision: {u_metrics['precision']*100:.2f}%")
+    print(f"- F1-Score: {u_metrics['f1']*100:.2f}%")
     print(f"- Overall Accuracy (OA): {u_metrics['oa']*100:.2f}%")
     print("="*50)
+
+    # -------------------------------------------------
+    # Save comparison figure
+    # -------------------------------------------------
+    metrics = ["IoU", "Recall", "Precision", "F1"]
+
+    heuristic_values = [
+        h_metrics["iou"] * 100,
+        h_metrics["recall"] * 100,
+        h_metrics["precision"] * 100,
+        h_metrics["f1"] * 100
+    ]
+
+    unet_values = [
+        u_metrics["iou"] * 100,
+        u_metrics["recall"] * 100,
+        u_metrics["precision"] * 100,
+        u_metrics["f1"] * 100
+    ]
+
+    x = np.arange(len(metrics))
+    width = 0.35
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    bars_h = ax.bar(
+        x - width / 2,
+        heuristic_values,
+        width,
+        label="Heuristic (Color+Texture)"
+    )
+
+    bars_u = ax.bar(
+        x + width / 2,
+        unet_values,
+        width,
+        label="U-Net"
+    )
+
+    ax.set_ylabel("Score (%)")
+    ax.set_title(
+        "Water Mask Performance Comparison\n"
+        "(Training-set JSON annotation comparison)"
+    )
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(metrics)
+    ax.set_ylim(0, 100)
+    ax.legend()
+
+    for bars in [bars_h, bars_u]:
+        for bar in bars:
+            height = bar.get_height()
+
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                height + 1,
+                f"{height:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=9
+            )
+
+    plt.tight_layout()
+
+    save_path = "results/water_mask_comparison.png"
+
+    os.makedirs(
+        os.path.dirname(save_path),
+        exist_ok=True
+    )
+
+    fig.savefig(
+        save_path,
+        dpi=180,
+        bbox_inches="tight"
+    )
+
+    plt.close(fig)
+
+    print(f"Saved comparison figure: {save_path}")
 
 if __name__ == "__main__":
     main()
