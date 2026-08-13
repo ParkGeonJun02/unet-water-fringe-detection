@@ -61,7 +61,7 @@ def main():
     LABEL_DIR = "data/processed/val/labels"
     WATER_THRESHOLD = 0.5
 
-    # Evaluation requires actual JSON ground-truth labels.
+    # Evaluation requires JSON annotation files.
     if not os.path.isdir(LABEL_DIR):
         print(f"[ERROR] Label directory not found: {LABEL_DIR}")
         sys.exit(1)
@@ -72,9 +72,9 @@ def main():
     ]
 
     if len(json_labels) == 0:
-      print("[ERROR] No JSON annotation files found.")
-      print("Evaluation requires validation images with matching JSON annotations.")
-      sys.exit(1)
+        print("[ERROR] No JSON annotation files found.")
+        print("Evaluation requires validation images with matching JSON annotations.")
+        sys.exit(1)
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Evaluation device: {device}")
