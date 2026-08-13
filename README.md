@@ -19,6 +19,34 @@
 
 순서로 성능을 검증하였습니다.
 
+
+
+### My Contribution
+
+> **Role Scope**  
+> 팀 프로젝트에서 U-Net 학습 환경 및 모델 학습 코드 구성은 팀원이 담당하였고,
+> 저는 **영상 특성 분석, Color / Texture 기반 후처리, 경계 추출 및 결과 검증**을 중심으로 담당하였습니다.
+
+- **문제 분석 및 개선 방향 도출**  
+  초기 Color-only 접근에서 물과 숲이 유사한 녹색 계열로 나타나는 오분류 문제를 확인하고,
+  숲과 수면의 질감 차이에 착안하여 **Local Texture 기반 판단 조건을 추가**하였습니다.
+
+- **후처리 및 영역 분석**  
+  RGB Channel과 Local Standard Deviation을 활용하여
+  Water / Forest / Sand-Road 영역을 구분하고,
+  Morphological Processing 및 Connected Component 기반 Mask 정제를 수행하였습니다.
+
+- **Boundary 및 오탐 분석**  
+  Binary Mask에서 수변 Boundary를 추출·시각화하고,
+  오탐 구간과 경계 위치 차이를 분석하여 Heuristic Baseline과 U-Net 결과를 비교하였습니다.
+
+- **결과 해석 및 프로젝트 정리**  
+  실험 결과의 개선 효과와 한계를 분석하고,
+  프로젝트 배경·목적, 결과 해석, 향후 개선 방향 및 발표자료 구성을 공동으로 수행하였습니다.
+
+
+
+
 ### 주요 입력 및 출력
 
 **Input**
