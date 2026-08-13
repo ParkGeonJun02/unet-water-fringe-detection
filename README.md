@@ -456,13 +456,10 @@ U-Net 적용 후 평균 경계 위치 오차가
 
 정량 검증 결과, U-Net 적용을 통해 다음 두 관점의 개선을 확인하였습니다.
 
-> **Region-level**  
-> IoU **62.67% → 69.51%**, F1 **78.74% → 82.82%**
->
-> **Boundary-level**  
-> MBD **37.0 px → 21.8 px**, Boundary F1은 모든 Tolerance에서 개선
->
-> **결론**  
+<p align="center"> 
+  <img src="Verification_Summary_insert_image.png" width="400"> 
+</p>
+
 > Color + Texture 기반 고정 규칙보다,
 > U-Net 기반 학습 방식이 **수변 영역 분할과 경계 위치 정확도 모두에서 더 높은 성능**을 보였습니다.
 
