@@ -1,0 +1,9 @@
+torch
+numpy
+albumentations
+opencv-python
+rasterio
+shapely
+scipy
+matplotlib
+tqdm
