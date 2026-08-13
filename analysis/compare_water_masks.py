@@ -1,3 +1,18 @@
+"""
+compare_water_masks.py
+
+Comparison of two water-segmentation approaches:
+1. Color + Texture heuristic baseline
+2. U-Net segmentation model
+
+Reference masks are generated from available JSON polygon annotations.
+
+Important:
+This script uses annotated images from the training dataset.
+Therefore, the results are intended for baseline comparison and
+should not be interpreted as independent test-set performance.
+"""
+
 import os
 import sys
 import torch
@@ -60,7 +75,7 @@ def load_pure_json_mask(label_path, height, width, geo_transform):
             for feat in features:
                 geo = feat.get("geometry", {})
                 code = str(feat.get("properties", {}).get("CODE", "")).strip()
-                # CODE=50: 수역 (물), CODE=20/40/511: 수변초목도 포함
+                # Project-defined water-related annotation codes used for the binary GT mask
                 if code in ["50", "20", "40", "511"] and geo.get("coordinates"):
                     try:
                         poly_obj = shape(geo)
@@ -84,16 +99,22 @@ def main():
     print(f"Using device: {device}")
 
     # Load UNet Model
-    CHECKPOINT = "checkpoint/best_sam_unet_model.pth"
+    CHECKPOINT = "checkpoint/best_unet_model.pth"
     model = UNet(in_channels=3, num_classes=1).to(device)
     model.load_state_dict(torch.load(CHECKPOINT, map_location=device))
     model.eval()
 
-    # We will evaluate on the training set because it contains ground truth JSON labels.
-    # We will evaluate on the first 100 images that have JSON labels for speed.
+    # Use the training split because JSON annotations are available there.
+    # Inspect up to the first 150 aerial images and evaluate only those
+    # that have corresponding JSON annotation files.
     IMG_DIR = "data/processed/train/images"
     LABEL_DIR = "data/processed/train/labels"
-    img_files = sorted([f for f in os.listdir(IMG_DIR) if f.upper().endswith(('.TIF', '.TIFF'))])[:150]
+    img_files = sorted(
+        [
+            f for f in os.listdir(IMG_DIR)
+            if f.upper().endswith((".TIF", ".TIFF"))
+        ]
+    )[:150]
 
     h_metrics = {"iou": 0.0, "precision": 0.0, "recall": 0.0, "oa": 0.0}
     u_metrics = {"iou": 0.0, "precision": 0.0, "recall": 0.0, "oa": 0.0}
@@ -155,14 +176,19 @@ def main():
 
         count += 1
 
+    if count == 0:
+        print("[ERROR] No images with matching JSON annotations were found.")
+        return
+
     for k in h_metrics:
         h_metrics[k] /= count
         u_metrics[k] /= count
 
-    print("\n" + "="*50)
-    print("         COMPARISON ON REAL JSON GT LABELS")
-    print("="*50)
-    print(f"Evaluated Images with JSON labels: {count}")
+    print("\n" + "="*60)
+    print("     TRAINING-SET COMPARISON USING JSON ANNOTATIONS")
+    print("="*60)
+    print(f"Evaluated images with JSON annotations: {count}")
+    print("Note: These results are for baseline comparison, not independent test performance.")
     print("\n[Approach A] Heuristic Color-Texture Filter:")
     print(f"- Mean IoU: {h_metrics['iou']*100:.2f}%")
     print(f"- Recall: {h_metrics['recall']*100:.2f}%")
