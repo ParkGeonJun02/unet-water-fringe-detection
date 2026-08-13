@@ -33,7 +33,9 @@
 
 ### Development Flow
 
-<img src="Input_data_enviroment_insert_image.png" width="400">
+<p align="center">
+  <img src="UNET_Development_Flow.png" width="600">
+</p>
 
 
 ---
@@ -170,20 +172,6 @@ U-Net은 512 × 512 크기의 RGB 영상을 입력으로 받아
 할 수 있도록 구성하였습니다.
 
 
-
----
-
-## 3. Requirements & Evaluation KPI
-
-본 프로젝트에서는 모델의 성능을 단순히 결과 영상의 시각적 품질만으로 판단하지 않고,
-**영역 분할 정확도와 경계 위치 정확도**를 각각 정량적으로 평가하도록 검증 기준을 구성하였습니다.
-
-즉, 다음 두 가지 질문을 중심으로 성능을 확인하였습니다.
-
-> **1. 수변 관련 영역을 얼마나 정확하게 분할하는가?**  
-> **2. 실제 Annotation 경계에 얼마나 가까운 위치에서 경계를 검출하는가?**
-
-이를 위해 Region-level Evaluation과 Boundary-level Evaluation을 분리하여 수행하였습니다.
 
 ---
 
