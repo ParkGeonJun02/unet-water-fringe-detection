@@ -1,8 +1,31 @@
-# U-net 기반 고해상도 항공영상을 활용한 한강 유역 수변구역 탐지
+# U-Net 기반 고해상도 항공영상을 활용한 한강 유역 수변구역 탐지
 
-> 고해상도 항공영상에서 수변 관련 영역을 탐지하기 위해  
-> Color + Texture 기반 Heuristic Baseline과 U-Net을 구성하고,  
-> 영역 분할 성능뿐만 아니라 경계 위치 오차까지 정량적으로 비교·검증한 프로젝트입니다.
+> 고해상도 항공영상에서 **Water / Soil·Sand-Road / Forest / Other 영역을 분석**하고,  
+> Color + Texture 기반 Heuristic Baseline과 U-Net을 비교하여  
+> **수변 영역 분할 성능과 경계 위치 정확도를 정량적으로 검증한 영상처리 프로젝트**입니다.
+
+<p align="center">
+  <img src="Introduction.png" width="1000">
+</p>
+
+본 프로젝트는 한강 유역의 고해상도 RGB 항공영상을 기반으로
+수변 관련 영역을 탐지하고 주변 지형을 구분하는 것을 목표로 진행하였습니다.
+
+초기에는 항공영상의 **색상 정보만으로 물 영역을 구분할 수 있을 것이라 판단**하였으나,
+숲과 일부 수역이 모두 짙은 녹색 계열로 표현되는 문제를 확인하였습니다.
+이에 숲과 수면의 **질감(Texture) 차이**를 추가하여 Color + Texture 기반 Heuristic Baseline을 구성하였습니다.
+
+이후 고정 Threshold 기반 규칙의 한계를 개선하기 위해
+**U-Net Binary Segmentation**을 적용하고,
+예측 결과에 영상처리 기반 후처리를 결합하여 최종 분석 Pipeline을 구성하였습니다.
+
+성능은 단순한 시각적 결과가 아니라 다음 두 관점에서 검증하였습니다.
+
+- **Region-level**: IoU / Precision / Recall / F1-Score
+- **Boundary-level**: Mean Boundary Distance (MBD) / Boundary F1
+
+이를 통해 **문제 관찰 → Baseline 설계 → 한계 분석 → U-Net 개선 → 동일 조건 정량 검증**의
+전체 개발 과정을 구성하였습니다.
 
 ---
 
